@@ -60,7 +60,7 @@ endif
 #  the .h extension. For example, the upwelling application includes the
 #  "upwelling.h" header file.
 
-ROMS_APPLICATION ?= UPWELLING
+ROMS_APPLICATION ?= NWA
 
 #  If application header files is not located in "ROMS/Include",
 #  provide an alternate directory FULL PATH.
@@ -75,11 +75,11 @@ MY_HEADER_DIR ?=
 #  If applicable, also used this directory to place your customized
 #  biology model header file (like fennel.h, nemuro.h, ecosim.h, etc).
 
-MY_ANALYTICAL_DIR ?=
+MY_ANALYTICAL_DIR ?= 
 
 # If applicable, where does CICE put its binary files?
 
-MY_CICE_DIR ?= /center1/AKWATERS/kshedstrom/CICE/NEP/compile
+MY_CICE_DIR ?= 
 
 #  Sometimes it is desirable to activate one or more CPP options to
 #  run different variants of the same application without modifying
@@ -94,13 +94,13 @@ MY_CPP_FLAGS ?=
 
 #  Activate debugging compiler options:
 
-   USE_DEBUG ?=
+   USE_DEBUG ?= on
 
 #  If parallel applications, use at most one of these definitions
 #  (leave both definitions blank in serial applications):
 
-     USE_MPI ?=
-  USE_OpenMP ?=
+     USE_MPI ?= on
+  USE_OpenMP ?= 
 
 #  If distributed-memory, turn on compilation via the script "mpif90".
 #  This is needed in some Linux operating systems. In some systems with
@@ -110,11 +110,11 @@ MY_CPP_FLAGS ?=
 #  In this, case the user need to select the desired compiler below and
 #  turn on both USE_MPI and USE_MPIF90 macros.
 
-  USE_MPIF90 ?=
+  USE_MPIF90 ?= on
 
 #  If applicable, activate 64-bit compilation:
 
-   USE_LARGE ?=
+   USE_LARGE ?= on
 
 #  If applicable, link with NetCDF-4 library. Notice that the NetCDF-4
 #  library needs both the HDF5 and MPI libraries.
@@ -124,7 +124,7 @@ MY_CPP_FLAGS ?=
 #  Top of the ROMS source tree.
 
 #MY_ROMS_DIR ?= $(PWD)
-MY_ROMS_DIR ?= /u1/uaf/kshedstrom/feedme/
+MY_ROMS_DIR ?= /gpfs/scratchfs1/kmm18005-lab/roms
 
 #--------------------------------------------------------------------------
 #  We are going to include a file with all the settings that depend on
@@ -149,7 +149,7 @@ MY_ROMS_DIR ?= /u1/uaf/kshedstrom/feedme/
 #  NetCDF and so on.
 #--------------------------------------------------------------------------
 
-        FORT ?= gfortran
+        FORT ?= ifort
 
 #--------------------------------------------------------------------------
 #  Set directory for executable.
@@ -293,44 +293,25 @@ define make-c-library
 	$(RANLIB) $$@
 endef
 
-## $(call f90-source, source-file-list)
-#f90-source = $(call source-dir-to-binary-dir,     \
-#                   $(subst .F,.f90,$1))
-
-## $(compile-rules)
-#define compile-rules
-#  $(foreach f, $(local_src),       \
-#    $(call one-compile-rule,$(call source-to-object,$f), \
-#    $(call f90-source,$f),$f))
-#endef
+# $(call f90-source, source-file-list)
+f90-source = $(call source-dir-to-binary-dir,     \
+                   $(subst .F,.f90,$1))
 
 # $(compile-rules)
 define compile-rules
   $(foreach f, $(local_src),       \
-    $(call one-compile-rule,$(call source-to-object,$f), $f))
+    $(call one-compile-rule,$(call source-to-object,$f), \
+    $(call f90-source,$f),$f))
 endef
 
-# $(c-compile-rules)
-define c-compile-rules
-  $(foreach f, $(local_c_src),       \
-    $(call one-c-compile-rule,$(call c-source-to-object,$f), $f))
-endef
-
-## $(call one-compile-rule, binary-file, f90-file, source-file)
-#define one-compile-rule
-#  $1: $2 $3
-#	cd $$(SCRATCH_DIR); $$(FC) -c $$(FFLAGS) $(notdir $2)
-#
-#  $2: $3
-#	$$(CPP) $$(CPPFLAGS) $$(MY_CPP_FLAGS) $$< > $$@
-#	$$(CLEAN) $$@
-#
-#endef
-
-# $(call one-compile-rule, binary-file, source-file)
+# $(call one-compile-rule, binary-file, f90-file, source-file)
 define one-compile-rule
-  $1: $2
-	cd $$(SCRATCH_DIR); $$(FC) -c $$(MY_CPP_FLAGS) $$(FFLAGS) $(notdir $2)
+  $1: $2 $3
+	cd $$(SCRATCH_DIR); $$(FC) -c $$(FFLAGS) $(notdir $2)
+
+  $2: $3
+	$$(CPP) $$(CPPFLAGS) $$(MY_CPP_FLAGS) $$< > $$@
+	$$(CLEAN) $$@
 
 endef
 
@@ -347,7 +328,7 @@ endef
 
 BIN := $(BINDIR)/romsS
 ifdef USE_DEBUG
-  BIN := $(BINDIR)/romsG
+  BIN := $(BINDIR)/romsG_mpi
 else
  ifdef USE_MPI
    BIN := $(BINDIR)/romsM
